@@ -6,6 +6,7 @@ import connectDB from './config/db.js';
 
 //routes
 import userRoutes from './routes/user.routes.js'
+import taskRoutes from './routes/task.routes.js'
 
 dotenv.config();
 
@@ -18,6 +19,8 @@ app.use(cors());
 
 //routes
 app.use('/api/user' , userRoutes)
+app.use('/api/tasks' , taskRoutes)
+
 
 
 //database connection

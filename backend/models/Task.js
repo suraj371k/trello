@@ -36,7 +36,7 @@ const taskSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-taskSchema.index({ title: 1 }, { unique: true }); // Unique title per board (single board app)
+taskSchema.index({ title: 1 }, { unique: true });
 
 const Task = mongoose.model('Task', taskSchema);
 export default Task; 
