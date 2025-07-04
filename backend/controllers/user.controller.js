@@ -160,3 +160,14 @@ export const logout = (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
+// Get all users 
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('username email _id createdAt').sort({ username: 1 });
+    res.status(200).json({ users });
+  } catch (err) {
+    console.log("error in get all users controller", err.message);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
