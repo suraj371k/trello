@@ -1,8 +1,11 @@
 import React from 'react'
+import { Tasks } from '../components/index'
 
 const Home = () => {
   return (
-    <div>Home</div>
+    <div>
+      <Tasks />
+    </div>
   )
 }
 

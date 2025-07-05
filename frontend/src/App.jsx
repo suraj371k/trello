@@ -2,8 +2,16 @@ import { BrowserRouter, Route, Routes } from "react-router-dom"
 import Layout from "./components/Layout"
 import { Home, LoginPage, RegisterPage } from "./components"
 import { Toaster } from 'react-hot-toast'
+import useAuthStore from "./store/authStore"
+import { useEffect } from "react"
 function App() {
 
+  const { getProfile } = useAuthStore()
+
+  useEffect(() => {
+    getProfile();
+  },[])
+  
   return (
     <BrowserRouter>
       <Routes>

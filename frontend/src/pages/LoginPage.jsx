@@ -11,20 +11,18 @@ const LoginPage = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      await login({ email, password });
-      toast.success("Login successfull")
-      navigate('/')
-    } catch (error) {
-      console.log(error);
+    const result = await login({ email: form.email, password: form.password });
+    if (result && result.user) {
+      toast.success("Login successful");
+      navigate("/");
+    } else {
       toast.error("Login failed");
     }
   };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-300 py-12 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
@@ -76,7 +74,7 @@ const LoginPage = () => {
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 font-semibold transition-colors duration-200 disabled:opacity-50"
             disabled={loading}
           >
-            {loading ? "Registering..." : "Register"}
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
         <p className="mt-6 text-center text-sm text-gray-600">
@@ -85,7 +83,7 @@ const LoginPage = () => {
             to="/register"
             className="text-blue-600 hover:underline font-medium"
           >
-            Login
+            Register
           </Link>
         </p>
       </div>

@@ -4,6 +4,7 @@ import {
   deleteTask,
   getTasks,
   updateTask,
+  forceUpdateTask,
   moveTask,
   assignTask,
   smartAssign
@@ -17,6 +18,7 @@ const router = express.Router();
 router.post("/create", protectedRoute, createTask);
 router.get("/", protectedRoute, getTasks);
 router.put("/:id", protectedRoute, updateTask);
+router.put("/:id/force", protectedRoute, forceUpdateTask);
 router.delete("/:id", protectedRoute, deleteTask);
 
 // Task management routes

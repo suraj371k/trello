@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import useAuthStore from "../store/authStore";
 import { toast } from 'react-hot-toast'
 
@@ -7,6 +7,7 @@ const RegisterPage = () => {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
 
   const { register, loading , error } = useAuthStore();
+  const navigate = useNavigate();
 
 
   const handleChange = (e) => {
@@ -16,11 +17,16 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await register({ username, email, password });
-      toast.success("Registration Sucessfull")
+      const result = await register({ username: form.username, email: form.email, password: form.password });
+      if (result && result.user) {
+        toast.success("Registration Successful");
+        navigate("/");
+      } else {
+        toast.error("Registration failed");
+      }
     } catch (err) {
-      console.log(error)
-      toast.error("Registration failed")
+      console.log(error);
+      toast.error("Registration failed");
     }
   };
 

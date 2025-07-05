@@ -5,7 +5,7 @@ import { io } from '../server.js';
 
 export const createTask = async (req, res) => {
   try {
-    const { title, description, assignedTo, status, priority } = req.body;
+    const { title, description, assignedTo, status, priority, dueDate } = req.body;
 
     // Validate required fields
     if (!title) {
@@ -34,7 +34,8 @@ export const createTask = async (req, res) => {
       assignedTo: assignedUser ? assignedUser._id : null,
       status,
       priority,
-      lastEditedBy: req.user ? req.user.userId : null
+      lastEditedBy: req.user ? req.user.userId : null,
+      dueDate: dueDate ? new Date(dueDate) : null
     });
 
     await task.save();
@@ -74,7 +75,7 @@ export const getTasks = async (req, res) => {
 export const updateTask = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, assignedTo, status, priority, version } = req.body;
+    const { title, description, assignedTo, status, priority, dueDate, version, forceOverwrite } = req.body;
 
     // Check if task exists
     const existingTask = await Task.findById(id);
@@ -82,13 +83,14 @@ export const updateTask = async (req, res) => {
       return res.status(404).json({ message: 'Task not found.' });
     }
 
-    // Conflict detection - check if version matches
-    if (version && existingTask.version !== version) {
+    // Conflict detection - check if version matches (unless force overwrite is requested)
+    if (version && existingTask.version !== version && !forceOverwrite) {
       return res.status(409).json({ 
         message: 'Conflict detected. Task has been modified by another user.',
         conflict: true,
         currentVersion: existingTask.version,
-        serverTask: existingTask
+        serverTask: existingTask,
+        clientVersion: version
       });
     }
 
@@ -121,6 +123,7 @@ export const updateTask = async (req, res) => {
         assignedTo: assignedUser ? assignedUser._id : null,
         status,
         priority,
+        dueDate: dueDate ? new Date(dueDate) : null,
         lastEditedBy: req.user ? req.user.userId : null,
         $inc: { version: 1 }
       },
@@ -129,12 +132,87 @@ export const updateTask = async (req, res) => {
      .populate('lastEditedBy', 'username email');
 
     // Create action log
-    await createActionLog('edit', id, req.user.userId, `Updated task: ${title}`);
+    const actionMessage = forceOverwrite 
+      ? `Force updated task: ${title} (overwrote conflicting changes)`
+      : `Updated task: ${title}`;
+    await createActionLog('edit', id, req.user.userId, actionMessage);
 
     // Emit real-time update
     io.to('board-room').emit('task-updated', { task: updatedTask });
 
-    res.status(200).json({ message: 'Task updated successfully.', task: updatedTask });
+    res.status(200).json({ 
+      message: forceOverwrite ? 'Task force updated successfully.' : 'Task updated successfully.', 
+      task: updatedTask,
+      forceOverwrite: !!forceOverwrite
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ message: 'Task title must be unique.' });
+    }
+    res.status(500).json({ message: 'Server error.', error: error.message });
+  }
+};
+
+// Force update a task (overwrite conflicting changes)
+export const forceUpdateTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, assignedTo, status, priority, dueDate } = req.body;
+
+    // Check if task exists
+    const existingTask = await Task.findById(id);
+    if (!existingTask) {
+      return res.status(404).json({ message: 'Task not found.' });
+    }
+
+    // Validate required fields
+    if (!title) {
+      return res.status(400).json({ message: 'Title is required.' });
+    }
+
+    // Validate title doesn't match column names
+    const columnNames = ['Todo', 'In Progress', 'Done'];
+    if (columnNames.includes(title)) {
+      return res.status(400).json({ message: 'Task title cannot match column names.' });
+    }
+
+    // If assignedTo is provided, check if user exists
+    let assignedUser = null;
+    if (assignedTo) {
+      assignedUser = await User.findById(assignedTo);
+      if (!assignedUser) {
+        return res.status(404).json({ message: 'Assigned user not found.' });
+      }
+    }
+
+    // Force update the task (ignore version conflicts)
+    const updatedTask = await Task.findByIdAndUpdate(
+      id,
+      {
+        title,
+        description,
+        assignedTo: assignedUser ? assignedUser._id : null,
+        status,
+        priority,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        lastEditedBy: req.user ? req.user.userId : null,
+        $inc: { version: 1 }
+      },
+      { new: true, runValidators: true }
+    ).populate('assignedTo', 'username email')
+     .populate('lastEditedBy', 'username email');
+
+    // Create action log
+    await createActionLog('edit', id, req.user.userId, `Force updated task: ${title} (overwrote conflicting changes)`);
+
+    // Emit real-time update
+    io.to('board-room').emit('task-updated', { task: updatedTask });
+
+    res.status(200).json({ 
+      message: 'Task force updated successfully.', 
+      task: updatedTask,
+      forceOverwrite: true
+    });
   } catch (error) {
     if (error.code === 11000) {
       return res.status(409).json({ message: 'Task title must be unique.' });
@@ -171,12 +249,23 @@ export const deleteTask = async (req, res) => {
 export const moveTask = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, version } = req.body;
 
     // Check if task exists
     const existingTask = await Task.findById(id);
     if (!existingTask) {
       return res.status(404).json({ message: 'Task not found.' });
+    }
+
+    // Conflict detection - check if version matches
+    if (version && existingTask.version !== version) {
+      return res.status(409).json({ 
+        message: 'Conflict detected. Task has been modified by another user.',
+        conflict: true,
+        currentVersion: existingTask.version,
+        serverTask: existingTask,
+        clientVersion: version
+      });
     }
 
     // Validate status

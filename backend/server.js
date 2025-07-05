@@ -16,16 +16,22 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "*",
-    methods: ["GET", "POST"]
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
+
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
+
 
 const port = process.env.PORT || 4000
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors());
 
 //routes
 app.use('/api/users' , userRoutes)
