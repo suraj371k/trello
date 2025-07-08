@@ -15,7 +15,7 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 
-const allowedOrigin = "https://trello-vert-ten.vercel.app/"
+const allowedOrigin = "https://trello-vert-ten.vercel.app"
 const io = new Server(server, {
   cors: {
     origin: allowedOrigin,
