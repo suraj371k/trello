@@ -4,6 +4,9 @@ import { io } from 'socket.io-client'
 
 // Socket.IO connection
 let socket = null;
+const backendUrl = "https://trello-backend-wll8.onrender.com";
+
+socket = io(backendUrl, { withCredentials: true });
 
 const useTaskStore = create((set, get) => ({
   tasks: [],
@@ -17,7 +20,7 @@ const useTaskStore = create((set, get) => ({
     if (socket) return; // Already connected
 
     // Connect to Socket.IO server
-    socket = io('http://localhost:3000', {
+    socket = io(backendUrl, {
       withCredentials: true,
     });
 
