@@ -2,11 +2,11 @@ import { create } from 'zustand'
 import axios from 'axios'
 import { io } from 'socket.io-client'
 
+// Use the same backend URL as in authStore
+const backend_url = 'https://trello-backend-wll8.onrender.com';
+
 // Socket.IO connection
 let socket = null;
-const backendUrl = "https://trello-backend-wll8.onrender.com";
-
-socket = io(backendUrl, { withCredentials: true });
 
 const useTaskStore = create((set, get) => ({
   tasks: [],
@@ -20,7 +20,7 @@ const useTaskStore = create((set, get) => ({
     if (socket) return; // Already connected
 
     // Connect to Socket.IO server
-    socket = io(backendUrl, {
+    socket = io(backend_url, {
       withCredentials: true,
     });
 
@@ -28,8 +28,6 @@ const useTaskStore = create((set, get) => ({
     socket.on('connect', () => {
       console.log('Socket.IO connected:', socket.id);
       set({ socketConnected: true });
-      
-      // Join the board room for real-time updates
       socket.emit('join-board');
     });
 
@@ -40,14 +38,12 @@ const useTaskStore = create((set, get) => ({
 
     // Real-time task events
     socket.on('task-created', (data) => {
-      console.log('Task created via socket:', data.task);
       set((state) => ({
         tasks: [data.task, ...state.tasks],
       }));
     });
 
     socket.on('task-updated', (data) => {
-      console.log('Task updated via socket:', data.task);
       set((state) => ({
         tasks: state.tasks.map((task) =>
           task._id === data.task._id ? data.task : task
@@ -56,14 +52,12 @@ const useTaskStore = create((set, get) => ({
     });
 
     socket.on('task-deleted', (data) => {
-      console.log('Task deleted via socket:', data.taskId);
       set((state) => ({
         tasks: state.tasks.filter((task) => task._id !== data.taskId),
       }));
     });
 
     socket.on('task-moved', (data) => {
-      console.log('Task moved via socket:', data.task);
       set((state) => ({
         tasks: state.tasks.map((task) =>
           task._id === data.task._id ? data.task : task
@@ -88,7 +82,7 @@ const useTaskStore = create((set, get) => ({
   fetchTasks: async () => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.get('/api/tasks/');
+      const res = await axios.get(`${backend_url}/api/tasks/`);
       set({ tasks: res.data.tasks || [], loading: false, error: null });
       return res.data.tasks;
     } catch (err) {
@@ -104,9 +98,8 @@ const useTaskStore = create((set, get) => ({
   createTask: async (taskData) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.post('/api/tasks/create', taskData);
+      const res = await axios.post(`${backend_url}/api/tasks/create`, taskData);
       set({ loading: false, error: null });
-      // Socket will handle the real-time update
       return res.data.task;
     } catch (err) {
       set({
@@ -121,12 +114,10 @@ const useTaskStore = create((set, get) => ({
   updateTask: async (id, updateData) => {
     set({ loading: true, error: null, conflictData: null });
     try {
-      const res = await axios.put(`/api/tasks/${id}`, updateData);
+      const res = await axios.put(`${backend_url}/api/tasks/${id}`, updateData);
       set({ loading: false, error: null });
-      // Socket will handle the real-time update
       return res.data.task;
     } catch (err) {
-      // Handle conflict specifically
       if (err.response?.status === 409 && err.response?.data?.conflict) {
         set({
           conflictData: err.response.data,
@@ -135,7 +126,6 @@ const useTaskStore = create((set, get) => ({
         });
         return { conflict: true, data: err.response.data };
       }
-      
       set({
         error: err.response?.data?.message || 'Failed to update task',
         loading: false,
@@ -148,9 +138,8 @@ const useTaskStore = create((set, get) => ({
   forceUpdateTask: async (id, updateData) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.put(`/api/tasks/${id}/force`, updateData);
+      const res = await axios.put(`${backend_url}/api/tasks/${id}/force`, updateData);
       set({ loading: false, error: null, conflictData: null });
-      // Socket will handle the real-time update
       return res.data.task;
     } catch (err) {
       set({
@@ -165,9 +154,8 @@ const useTaskStore = create((set, get) => ({
   deleteTask: async (id) => {
     set({ loading: true, error: null });
     try {
-      await axios.delete(`/api/tasks/${id}`);
+      await axios.delete(`${backend_url}/api/tasks/${id}`);
       set({ loading: false, error: null });
-      // Socket will handle the real-time update
       return true;
     } catch (err) {
       set({
@@ -182,8 +170,7 @@ const useTaskStore = create((set, get) => ({
   moveTask: async (id, { status, version }) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.patch(`/api/tasks/${id}/move`, { status, version });
-      // Optimistically update the task in local state
+      const res = await axios.patch(`${backend_url}/api/tasks/${id}/move`, { status, version });
       set((state) => ({
         tasks: state.tasks.map((task) =>
           task._id === id ? { ...task, status } : task
@@ -191,10 +178,8 @@ const useTaskStore = create((set, get) => ({
         loading: false,
         error: null,
       }));
-      // Socket will handle the real-time update
       return res.data.task;
     } catch (err) {
-      // Handle conflict specifically
       if (err.response?.status === 409 && err.response?.data?.conflict) {
         set({
           conflictData: err.response.data,
@@ -203,7 +188,6 @@ const useTaskStore = create((set, get) => ({
         });
         return { conflict: true, data: err.response.data };
       }
-      
       set({
         error: err.response?.data?.message || 'Failed to move task',
         loading: false,
@@ -216,9 +200,8 @@ const useTaskStore = create((set, get) => ({
   assignTask: async (id, assignedTo) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.patch(`/api/tasks/${id}/assign`, { assignedTo });
+      const res = await axios.patch(`${backend_url}/api/tasks/${id}/assign`, { assignedTo });
       set({ loading: false, error: null });
-      // Socket will handle the real-time update
       return res.data.task;
     } catch (err) {
       set({
@@ -233,9 +216,8 @@ const useTaskStore = create((set, get) => ({
   smartAssignTask: async (id) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.patch(`/api/tasks/${id}/smart-assign`);
+      const res = await axios.patch(`${backend_url}/api/tasks/${id}/smart-assign`);
       set({ loading: false, error: null });
-      // Socket will handle the real-time update
       return res.data.task;
     } catch (err) {
       set({

@@ -35,6 +35,9 @@ app.use(cors({
   credentials: true
 }));
 
+app.get('/' , (req , res) => {
+  res.send("code is running")
+})
 const port = process.env.PORT || 4000
 
 app.use(express.json());
