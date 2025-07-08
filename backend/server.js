@@ -17,7 +17,7 @@ const server = createServer(app);
 
 // Allow both local and deployed frontend
 const allowedOrigins = [
-  'http://localhost:5174',
+  'http://localhost:5173',
   'https://trello-vert-ten.vercel.app'
 ];
 
