@@ -3,6 +3,8 @@ import axios from 'axios'
 
 axios.defaults.withCredentials = true;
 
+const backend_url=`https://trello-backend-wll8.onrender.com`
+
 
 const useAuthStore = create((set) => ({
   user: null,
@@ -13,7 +15,7 @@ const useAuthStore = create((set) => ({
   register: async ({ username, email, password }) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.post('/api/users/register', { username, email, password });
+      const res = await axios.post(`${backend_url}/api/users/register`, { username, email, password });
       set({ user: res.data.user || null, loading: false, error: null });
       return res.data;
     } catch (err) {
@@ -29,7 +31,7 @@ const useAuthStore = create((set) => ({
   login: async ({ email, password }) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.post('/api/users/login', { email, password });
+      const res = await axios.post(`${backend_url}/api/users/login`, { email, password });
       set({ user: res.data.user || null, loading: false, error: null });
       return res.data;
     } catch (err) {
@@ -45,7 +47,7 @@ const useAuthStore = create((set) => ({
   logout: async () => {
     set({ loading: true, error: null });
     try {
-      await axios.post('/api/users/logout');
+      await axios.post(`${backend_url}/api/users/logout`);
       set({ user: null, loading: false, error: null });
     } catch (err) {
       set({
@@ -59,7 +61,7 @@ const useAuthStore = create((set) => ({
   getProfile: async () => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.get('/api/users/get-profile');
+      const res = await axios.get(`${backend_url}/api/users/get-profile`);
       set({ user: res.data.user || null, loading: false, error: null });
       return res.data.user;
     } catch (err) {
@@ -75,7 +77,7 @@ const useAuthStore = create((set) => ({
   getAllUsers: async () => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.get('/api/users/all');
+      const res = await axios.get(`${backend_url}/api/users/all`);
       set({ loading: false, error: null });
       return res.data.users || [];
     } catch (err) {

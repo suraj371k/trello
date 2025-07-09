@@ -15,15 +15,10 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 
-// Allow both local and deployed frontend
-const allowedOrigins = [
-  'http://localhost:5173',
-  'https://trello-vert-ten.vercel.app'
-];
 
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: 'https://trello-vert-ten.vercel.app',
     transports: ['websocket'],
     methods: ["GET", "POST"],
     credentials: true
@@ -31,7 +26,7 @@ const io = new Server(server, {
 });
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: 'https://trello-vert-ten.vercel.app',
   credentials: true
 }));
 

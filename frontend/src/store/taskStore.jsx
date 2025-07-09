@@ -2,8 +2,14 @@ import { create } from 'zustand'
 import axios from 'axios'
 import { io } from 'socket.io-client'
 
+
+axios.defaults.withCredentials = true;
+
 // Socket.IO connection
 let socket = null;
+
+const backend_url=`https://trello-backend-wll8.onrender.com`
+
 
 const useTaskStore = create((set, get) => ({
   tasks: [],
@@ -17,7 +23,7 @@ const useTaskStore = create((set, get) => ({
     if (socket) return; // Already connected
 
     // Connect to Socket.IO server
-    socket = io('https://trello-backend-wll8.onrender.com', {
+    socket = io(`${backend_url}`, {
       withCredentials: true,
     });
 
@@ -85,7 +91,7 @@ const useTaskStore = create((set, get) => ({
   fetchTasks: async () => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.get('/api/tasks/');
+      const res = await axios.get(`${backend_url}/api/tasks/`);
       set({ tasks: res.data.tasks || [], loading: false, error: null });
       return res.data.tasks;
     } catch (err) {
@@ -101,7 +107,7 @@ const useTaskStore = create((set, get) => ({
   createTask: async (taskData) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.post('/api/tasks/create', taskData);
+      const res = await axios.post(`${backend_url}/api/tasks/create`, taskData);
       set({ loading: false, error: null });
       // Socket will handle the real-time update
       return res.data.task;
@@ -118,7 +124,7 @@ const useTaskStore = create((set, get) => ({
   updateTask: async (id, updateData) => {
     set({ loading: true, error: null, conflictData: null });
     try {
-      const res = await axios.put(`/api/tasks/${id}`, updateData);
+      const res = await axios.put(`${backend_url}/api/tasks/${id}`, updateData);
       set({ loading: false, error: null });
       // Socket will handle the real-time update
       return res.data.task;
@@ -145,7 +151,7 @@ const useTaskStore = create((set, get) => ({
   forceUpdateTask: async (id, updateData) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.put(`/api/tasks/${id}/force`, updateData);
+      const res = await axios.put(`${backend_url}/api/tasks/${id}/force`, updateData);
       set({ loading: false, error: null, conflictData: null });
       // Socket will handle the real-time update
       return res.data.task;
@@ -162,7 +168,7 @@ const useTaskStore = create((set, get) => ({
   deleteTask: async (id) => {
     set({ loading: true, error: null });
     try {
-      await axios.delete(`/api/tasks/${id}`);
+      await axios.delete(`${backend_url}/api/tasks/${id}`);
       set({ loading: false, error: null });
       // Socket will handle the real-time update
       return true;
@@ -179,7 +185,7 @@ const useTaskStore = create((set, get) => ({
   moveTask: async (id, { status, version }) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.patch(`/api/tasks/${id}/move`, { status, version });
+      const res = await axios.patch(`${backend_url}/api/tasks/${id}/move`, { status, version });
       // Optimistically update the task in local state
       set((state) => ({
         tasks: state.tasks.map((task) =>
@@ -213,7 +219,7 @@ const useTaskStore = create((set, get) => ({
   assignTask: async (id, assignedTo) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.patch(`/api/tasks/${id}/assign`, { assignedTo });
+      const res = await axios.patch(`${backend_url}/api/tasks/${id}/assign`, { assignedTo });
       set({ loading: false, error: null });
       // Socket will handle the real-time update
       return res.data.task;
@@ -230,7 +236,7 @@ const useTaskStore = create((set, get) => ({
   smartAssignTask: async (id) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.patch(`/api/tasks/${id}/smart-assign`);
+      const res = await axios.patch(`${backend_url}/api/tasks/${id}/smart-assign`);
       set({ loading: false, error: null });
       // Socket will handle the real-time update
       return res.data.task;
